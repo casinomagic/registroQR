@@ -119,14 +119,19 @@ async function createRegistro(registroData) {
         // Crear documento con DNI como ID
         const docRef = db.collection('eventos').doc(eventoId).collection('registros').doc(dni);
         
-        // Preparar datos
-        const dataToSave = {
+        // Preparar datos - Filtrar campos undefined
+        const baseData = {
             ...registroData,
             eventoId: eventoId,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             estado: 'ACTIVO',
             syncedToSheets: false
         };
+        
+        // Eliminar campos undefined o null para evitar errores de Firestore
+        const dataToSave = Object.fromEntries(
+            Object.entries(baseData).filter(([_, value]) => value !== undefined && value !== null)
+        );
         
         // Guardar en Firestore
         await docRef.set(dataToSave);
