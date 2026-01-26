@@ -136,11 +136,33 @@
         let registrosActuales = [];
         let eventoSeleccionadoId = null;
 
-        // Al cargar la página
+        // Al cargar la página - Verificar estado de autenticación de Firebase
         window.onload = function() {
-            if (FirebaseAdmin.verificarSesion()) {
-                iniciarPanel();
-            }
+            // Escuchar cambios en el estado de autenticación
+            firebase.auth().onAuthStateChanged(async (user) => {
+                if (user) {
+                    // Usuario autenticado - Esperar a que el token esté listo
+                    console.log('✅ Usuario autenticado:', user.email);
+                    
+                    try {
+                        // Asegurarse de que el token de autenticación esté disponible
+                        await user.getIdToken();
+                        console.log('✅ Token de autenticación obtenido');
+                        
+                        // Ahora sí iniciar el panel
+                        await iniciarPanel();
+                    } catch (error) {
+                        console.error('❌ Error obteniendo token:', error);
+                        document.getElementById('loginScreen').style.display = 'block';
+                        document.getElementById('adminPanel').style.display = 'none';
+                    }
+                } else {
+                    // No hay usuario autenticado
+                    console.log('ℹ️ No hay sesión activa');
+                    document.getElementById('loginScreen').style.display = 'block';
+                    document.getElementById('adminPanel').style.display = 'none';
+                }
+            });
         };
 
         // Login
@@ -157,9 +179,9 @@
             
             try {
                 // Intentar login con Firebase Authentication
+                // Firebase Auth maneja automáticamente la persistencia de sesión
                 await loginWithFirebase(email, password);
-                FirebaseAdmin.guardarSesionAdmin();
-                iniciarPanel();
+                // El onAuthStateChanged detectará el login y llamará a iniciarPanel()
             } catch (error) {
                 let mensaje = '❌ Error de autenticación';
                 if (error.code === 'auth/user-not-found') {
@@ -178,24 +200,32 @@
 
         // Iniciar panel
         async function iniciarPanel() {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            
-            // Inicializar Firebase
-            if (!FirebaseDB.initFirestore()) {
-                alert('Error conectando con Firebase');
-                return;
+            try {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                
+                // Inicializar Firebase
+                if (!FirebaseDB.initFirestore()) {
+                    alert('Error conectando con Firebase');
+                    return;
+                }
+                
+                // Verificar y corregir eventos activos
+                const eventoCorregido = await FirebaseAdmin.verificarYCorregirEventosActivos();
+                if (eventoCorregido) {
+                    console.log(`ℹ️ Se corrigió automáticamente: solo el evento "${eventoCorregido}" está activo`);
+                }
+                
+                // Cargar datos
+                await cargarEstadisticas();
+                await cargarEventos();
+            } catch (error) {
+                console.error('❌ Error inicializando panel:', error);
+                alert('Error al cargar el panel: ' + error.message);
+                // Volver al login si hay error
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('adminPanel').style.display = 'none';
             }
-            
-            // Verificar y corregir eventos activos
-            const eventoCorregido = await FirebaseAdmin.verificarYCorregirEventosActivos();
-            if (eventoCorregido) {
-                console.log(`ℹ️ Se corrigió automáticamente: solo el evento "${eventoCorregido}" está activo`);
-            }
-            
-            // Cargar datos
-            await cargarEstadisticas();
-            await cargarEventos();
         }
 
         // Cargar estadísticas

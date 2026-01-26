@@ -26,10 +26,10 @@ service cloud.firestore {
     
     // Colección de eventos
     match /eventos/{eventoId} {
-      // Permitir lectura pública de eventos activos
-      allow read: if resource.data.activo == true;
+      // Permitir lectura pública solo de eventos activos específicos
+      allow get: if resource.data.activo == true;
       
-      // Admin autenticado puede hacer todo
+      // Admin autenticado puede hacer todo (leer todos, crear, actualizar, eliminar)
       allow read, create, update, delete: if isAuthenticated();
       
       // Subcolección de registros por evento

@@ -14,6 +14,10 @@
 async function loginWithFirebase(email, password) {
     try {
         const auth = firebase.auth();
+        
+        // Configurar persistencia LOCAL (persiste incluso al cerrar el navegador)
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log('✅ Login exitoso:', userCredential.user.email);
         return true;
@@ -80,7 +84,8 @@ async function cerrarSesion() {
     }
     sessionStorage.removeItem('admin_logged');
     sessionStorage.removeItem('admin_logged_at');
-    window.location.reload();
+    // El onAuthStateChanged detectará el logout y mostrará la pantalla de login
+    console.log('✅ Sesión cerrada correctamente');
 }
 
 /**
