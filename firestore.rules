@@ -33,7 +33,7 @@ service cloud.firestore {
         allow create: if request.resource.data.dni == dni 
                       && isValidDNI(dni)
                       && isEventoActivo(eventoId)
-                      && request.resource.data.keys().hasAll(['nombre', 'apellido', 'email', 'dni', 'timestamp', 'eventoId']);
+                      && request.resource.data.keys().hasAll(['nombreCompleto', 'email', 'dni', 'timestamp', 'eventoId']);
         
         // Permitir lectura pública de un DNI específico (para verificar duplicados)
         // Solo si el evento está activo
