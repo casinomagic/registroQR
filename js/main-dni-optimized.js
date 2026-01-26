@@ -11,10 +11,10 @@
  * MEJORAS: Firebase automático, detección de evento activo, cache agresivo
  */
 
-// Modo DEBUG (cambiar a false en producción)
-const DEBUG_MODE = false;
+// DEBUG_MODE ya está definido en firebase-db.js
+// No redeclarar para evitar conflictos
 function debugLog(...args) {
-    if (DEBUG_MODE) debugLog(...args);
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log(...args);
 }
 
 // Variables esenciales
