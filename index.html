@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#161337">
+    <style>
+        button:disabled {
+            background-color: #cccccc;
+            color: 666666;
+            cursor: not-allowed;
+        }
+    </style>
+    <title>Registro al Evento - Casino Magic</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Logo móvil (se muestra cuando hay colaborador seleccionado) -->
+        <div id="topLogo" class="top-logo" style="display: none;">
+            <div class="logo-container">
+                <img src="img/Pie blanco.png" alt="Juego Responsable Logo" class="logo-image">
+            </div>
+        </div>
+
+        <!-- Cabecera con gradiente -->
+        <div class="header">
+            <div class="header-content">
+                <img src="img/Estrella-Solita-Blanca.png" alt="Estrella Logo" class="header-image">
+            </div>
+        </div>
+
+        <!-- Contenedor del contenido -->
+        <div class="content-wrapper">
+            <!-- Área de contenido -->
+            <div class="content">
+                <!-- Mensajes de estado -->
+                <div id="message" class="message"></div>
+
+                <!-- PANTALLA 1: Verificación de DNI -->
+                <div id="dniScreen" class="screen">
+                    <div class="dni-section">
+                        <h2 class="content-title">Participá de los sorteos</h2>
+                        <p id="eventoNombre" style="text-align: center; color: #666; font-size: 16px; margin: 10px 0 20px 0; min-height: 24px;">
+                            Cargando evento...
+                        </p>
+                        <div class="dni-input-container">
+                            <input type="text" id="dniInput" class="dni-input" placeholder="Ej: 12345678"
+                                autocomplete="off" inputmode="numeric" maxlength="8" aria-describedby="dni-help"
+                                aria-required="true">
+                            <div id="dni-help" class="form-help">Ingresá tu número de DNI sin puntos.</div>
+                            <button type="button" id="checkDniBtn" disabled class="btn btn-primary">
+                                CONTINUAR
+                            </button>
+                            <script>
+                                // Habilitar/deshabilitar el botón según la validez del DNI ingresado
+                                const dniInput = document.getElementById('dniInput');
+                                const checkDniBtn = document.getElementById('checkDniBtn');
+
+                                dniInput.addEventListener('input', () => {
+                                    // Habilitar el botón solo si el DNI tiene 7 u 8 dígitos numéricos
+                                    const dniValue = dniInput.value.trim();
+                                    const isValidDni = /^\d{7,8}$/.test(dniValue);
+                                    checkDniBtn.disabled = !isValidDni;
+                                    // Habilitar el botón solo si el DNI está entre 3.000.000 y 99.999.999
+                                    const dniNumber = parseInt(dniValue, 10);
+                                    checkDniBtn.disabled = !(dniNumber >= 3000000 && dniNumber <= 99999999);
+                                });
+                            </script>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANTALLA 2: Formulario de registro -->
+                <div id="registrationScreen" class="screen" style="display: none;">
+                    <div class="registration-header">
+                        <h2 class="content-title">Completá tus datos</h2>
+                        <div class="dni-display">
+                            <strong>DNI: <span id="displayDni"></span></strong>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de datos personales -->
+                    <form id="registrationForm">
+                        <div class="form-group">
+                            <label for="nombreCompletoInput" class="form-label">Nombre y Apellido:</label>
+                            <input type="text" id="nombreCompletoInput" class="form-input"
+                                placeholder="Ej: Jamie Adeyemi" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="fechaNacimientoInput" class="form-label">Fecha de Nacimiento:</label>
+                            <input type="date" id="fechaNacimientoInput" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="emailInput" class="form-label">Email:</label>
+                            <input type="email" id="emailInput" class="form-input" placeholder="Ej: jamie@email.com"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="telefonoInput" class="form-label">Teléfono:</label>
+                            <input type="tel" id="telefonoInput" maxlength="10" class="form-input"
+                                placeholder="Ej: 11-1234-5678" required>
+                        </div>
+                        <!--script>
+                            // Formatear el número de teléfono mientras se escribe
+                            const telefonoInput = document.getElementById('telefonoInput');
+
+                            telefonoInput.addEventListener('input', () => {
+                                let input = telefonoInput.value.replace(/\D/g, ''); // Eliminar caracteres no numéricos
+                                if (input.length > 2) {
+                                    input = input.slice(0, 2) + '-' + input.slice(2); // Agregar guion después del código de área
+                                }
+                                if (input.length > 7) {
+                                    input = input.slice(0, 7) + '-' + input.slice(7); // Agregar guion después de los primeros 4 dígitos
+                                }
+                                telefonoInput.value = input;
+                            });
+                        </script-->
+                        <div class="form-group">
+                            <div class="checkbox-container-modern">
+                                <input type="checkbox" id="participantConfirms" class="checkbox-modern" checked
+                                    required>
+                                <label for="participantConfirms" class="checkbox-label-modern">
+                                    Confirmo mi participación en el evento.
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                REGISTRARSE
+                            </button>
+                            <button type="button" class="btn btn-back" id="backBtn">
+                                VOLVER
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <!-- PANTALLA 3: DNI ya registrado -->
+                <div id="alreadyRegisteredScreen" class="screen" style="display: none;">
+                    <div class="already-registered">
+                        <div class="participant-card">
+                            <div class="participant-emoji">✅</div>
+                            <div class="participant-details">
+                                <h3>Este DNI ya está participando del sorteo.</h3>
+                                <div id="existingParticipantName" class="participant-name"></div>
+                                <div id="existingParticipantDni" class="participant-dni"></div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-back" id="backToStartBtn">
+                                VERIFICAR OTRO DNI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer con logo -->
+    <div class="footer">
+        <div class="logo-container">
+            <img src="img/Pie blanco.png" alt="Juego Responsable Logo" class="logo-image">
+        </div>
+    </div>
+    </div>
+
+    <!-- Modal de Carga -->
+    <div id="loadingModal" class="submission-loading" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2 id="loadingTitle">Verificando datos...</h2>
+            <p id="loadingMessage">Por favor, esperá mientras procesamos tu información.</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- Configuración Firebase -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/firebase-db.js"></script>
+
+    <!-- Configuración de la aplicación -->
+    <script src="js/config.js?v=6.1"></script>
+
+    <!-- Script principal DNI OPTIMIZADO -->
+    <script src="js/main-dni-optimized.js?v=7.0"></script>
+
+    <!-- Script para cerrar página -->
+    <script src="js/close-page.js"></script>
+</body>
+
+</html>

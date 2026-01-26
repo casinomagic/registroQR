@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "toba.vsfire",
+    "firebase.vscode-firebase-explorer",
+    "dotenv.dotenv-vscode",
+    "ms-vscode.vscode-typescript-next"
+  ]
+}

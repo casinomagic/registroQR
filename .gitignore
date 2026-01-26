@@ -1,0 +1,74 @@
+# Firebase credentials y variables de entorno
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Firebase config con credenciales
+# IMPORTANTE: firebase-config.js contiene API keys públicas de Firebase
+# Estas son seguras de compartir según documentación oficial de Firebase
+# Ver: https://firebase.google.com/docs/projects/api-keys
+
+# Archivos de configuración privada (si existen)
+config.private.js
+credentials.json
+serviceAccountKey.json
+
+# Firebase local
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+dataconnect-debug.log
+pglite-debug.log
+
+# Data Connect (no se usa)
+dataconnect/
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Build outputs
+dist/
+build/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+temp.txt
+*.tmp
+planillagoogle.txt
+
+# Workspace files
+*.code-workspace
+
+# Backups
+*.backup
+*.backup.*
+backup/
+archive/
+*.backup
+*.bak
+
+# Archivos locales
+planillagoogle.txt
+*.code-workspace

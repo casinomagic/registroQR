@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin - Casino Magic</title>
+    <link rel="stylesheet" href="css/admin.min.css">
+</head>
+<body>
+    <!-- PANTALLA DE LOGIN -->
+    <div class="login-container" id="loginScreen">
+        <h1>🎰 Panel de Administración</h1>
+        <h3 style="text-align: center; color: #666; margin-bottom: 20px;">Casino Magic</h3>
+        <input type="email" id="emailInput" placeholder="Email" autocomplete="email" style="margin-bottom: 10px;">
+        <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="current-password">
+        <button onclick="login()">Ingresar</button>
+        <div id="loginError" style="color: red; text-align: center; margin-top: 10px;"></div>
+        <p style="text-align: center; color: #999; font-size: 12px; margin-top: 20px;">
+            Usar credenciales de Firebase Authentication
+        </p>
+    </div>
+
+    <!-- PANEL DE ADMINISTRACIÓN -->
+    <div class="admin-panel" id="adminPanel">
+        <!-- Header -->
+        <div class="admin-header">
+            <div>
+                <h1>🎰 Panel de Administración</h1>
+                <p style="color: #666;">Casino Magic - Gestión de Eventos</p>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="mostrarModalNuevoEvento()">+ Nuevo Evento</button>
+                <button class="btn btn-danger" onclick="FirebaseAdmin.cerrarSesion()">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <!-- Estadísticas Generales -->
+        <div class="cards-grid" id="statsGrid">
+            <!-- Se llenan dinámicamente -->
+        </div>
+
+        <!-- Lista de Eventos -->
+        <div class="content-section">
+            <h2>📅 Eventos</h2>
+            <div id="eventosLista">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Registros del Evento Seleccionado -->
+        <div class="content-section" id="registrosSection" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>👥 Registros: <span id="eventoSeleccionadoNombre"></span></h2>
+                <div>
+                    <button class="btn btn-success" onclick="exportarRegistrosActuales()">📥 Exportar CSV</button>
+                    <button class="btn btn-secondary" onclick="cerrarRegistros()">Cerrar</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <input type="text" id="searchDNI" placeholder="Buscar por DNI..." onkeyup="filtrarRegistros()">
+            </div>
+            
+            <div id="registrosTabla">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nuevo Evento -->
+    <div class="modal" id="modalNuevoEvento">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Crear Nuevo Evento</h2>
+                <span class="close-modal" onclick="cerrarModal()">&times;</span>
+            </div>
+            <form onsubmit="crearEvento(event)">
+                <div class="form-group">
+                    <label>ID del Evento (sin espacios):</label>
+                    <input type="text" id="nuevoEventoId" required placeholder="ej: sorteo-febrero-2026">
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Evento:</label>
+                    <input type="text" id="nuevoEventoNombre" required placeholder="ej: Sorteo Febrero 2026">
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Fecha Inicio:</label>
+                        <input type="date" id="nuevoEventoFechaInicio" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Fin:</label>
+                        <input type="date" id="nuevoEventoFechaFin" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <textarea id="nuevoEventoDescripcion" rows="3" placeholder="Descripción del evento..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="nuevoEventoActivo">
+                        Activar este evento inmediatamente
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Crear Evento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/firebase-db.min.js"></script>
+    <script src="js/firebase-admin.min.js"></script>
+    
+    <script>
+        let eventosData = [];
+        let registrosActuales = [];
+        let eventoSeleccionadoId = null;
+
+        // Al cargar la página
+        window.onload = function() {
+            if (FirebaseAdmin.verificarSesion()) {
+                iniciarPanel();
+            }
+        };
+
+        // Login
+        async function login() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            if (!email || !password) {
+                errorDiv.textContent = '❌ Ingrese email y contraseña';
+                setTimeout(() => errorDiv.textContent = '', 3000);
+                return;
+            }
+            
+            try {
+                // Intentar login con Firebase Authentication
+                await loginWithFirebase(email, password);
+                FirebaseAdmin.guardarSesionAdmin();
+                iniciarPanel();
+            } catch (error) {
+                let mensaje = '❌ Error de autenticación';
+                if (error.code === 'auth/user-not-found') {
+                    mensaje = '❌ Usuario no encontrado';
+                } else if (error.code === 'auth/wrong-password') {
+                    mensaje = '❌ Contraseña incorrecta';
+                } else if (error.code === 'auth/invalid-email') {
+                    mensaje = '❌ Email inválido';
+                } else if (error.code === 'auth/too-many-requests') {
+                    mensaje = '❌ Demasiados intentos. Espere un momento';
+                }
+                errorDiv.textContent = mensaje;
+                setTimeout(() => errorDiv.textContent = '', 5000);
+            }
+        }
+
+        // Iniciar panel
+        async function iniciarPanel() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            
+            // Inicializar Firebase
+            if (!FirebaseDB.initFirestore()) {
+                alert('Error conectando con Firebase');
+                return;
+            }
+            
+            // Cargar datos
+            await cargarEstadisticas();
+            await cargarEventos();
+        }
+
+        // Cargar estadísticas
+        async function cargarEstadisticas() {
+            const statsGrid = document.getElementById('statsGrid');
+            const eventos = await FirebaseAdmin.getAllEventos();
+            
+            let totalRegistros = 0;
+            let eventosActivos = 0;
+            
+            for (const evento of eventos) {
+                const stats = await FirebaseAdmin.getEstadisticasEvento(evento.id);
+                totalRegistros += stats.total;
+                if (evento.activo) eventosActivos++;
+            }
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <h3>Total Eventos</h3>
+                    <div class="number">${eventos.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Eventos Activos</h3>
+                    <div class="number">${eventosActivos}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Registros</h3>
+                    <div class="number">${totalRegistros}</div>
+                </div>
+            `;
+        }
+
+        // Cargar eventos
+        async function cargarEventos() {
+            const listaDiv = document.getElementById('eventosLista');
+            listaDiv.innerHTML = '<div class="spinner"></div>';
+            
+            eventosData = await FirebaseAdmin.getAllEventos();
+            
+            if (eventosData.length === 0) {
+                listaDiv.innerHTML = '<p>No hay eventos creados. Crea uno nuevo.</p>';
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>ID</th><th>Nombre</th><th>Fecha Inicio</th><th>Fecha Fin</th><th>Estado</th><th>Registros</th><th>Acciones</th></tr></thead><tbody>';
+            
+            for (const evento of eventosData) {
+                const stats = await FirebaseAdmin.getEstadisticasEvento(evento.id);
+                const fechaInicio = evento.fechaInicio?.toDate ? evento.fechaInicio.toDate().toLocaleDateString() : 'N/A';
+                const fechaFin = evento.fechaFin?.toDate ? evento.fechaFin.toDate().toLocaleDateString() : 'N/A';
+                
+                html += `
+                    <tr>
+                        <td><strong>${evento.id}</strong></td>
+                        <td>${evento.nombre}</td>
+                        <td>${fechaInicio}</td>
+                        <td>${fechaFin}</td>
+                        <td>${evento.activo ? '<span class="badge badge-success">ACTIVO</span>' : '<span class="badge badge-danger">INACTIVO</span>'}</td>
+                        <td><strong>${stats.total}</strong></td>
+                        <td>
+                            <button class="btn ${evento.activo ? 'btn-warning' : 'btn-success'}" onclick="toggleEvento('${evento.id}', ${!evento.activo})" style="padding: 5px 10px; font-size: 12px;">
+                                ${evento.activo ? 'Desactivar' : 'Activar'}
+                            </button>
+                            <button class="btn btn-info" onclick="verRegistros('${evento.id}', '${evento.nombre}')" style="padding: 5px 10px; font-size: 12px;">
+                                Ver Registros
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            html += '</tbody></table>';
+            listaDiv.innerHTML = html;
+        }
+
+        // Toggle evento activo/inactivo
+        async function toggleEvento(eventoId, activo) {
+            try {
+                await FirebaseAdmin.toggleEventoActivo(eventoId, activo);
+                await cargarEstadisticas();
+                await cargarEventos();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Ver registros de un evento
+        async function verRegistros(eventoId, nombreEvento) {
+            eventoSeleccionadoId = eventoId;
+            document.getElementById('eventoSeleccionadoNombre').textContent = nombreEvento;
+            document.getElementById('registrosSection').style.display = 'block';
+            document.getElementById('registrosTabla').innerHTML = '<div class="spinner"></div>';
+            
+            registrosActuales = await FirebaseAdmin.getAllRegistrosEvento(eventoId);
+            mostrarRegistros(registrosActuales);
+        }
+
+        // Mostrar registros en tabla
+        function mostrarRegistros(registros) {
+            const tablaDiv = document.getElementById('registrosTabla');
+            
+            if (registros.length === 0) {
+                tablaDiv.innerHTML = '<p>No hay registros en este evento.</p>';
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>DNI</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Fecha Registro</th><th>Estado</th></tr></thead><tbody>';
+            
+            registros.forEach(r => {
+                const fecha = r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/A';
+                html += `
+                    <tr>
+                        <td><strong>${r.dni}</strong></td>
+                        <td>${r.nombreCompleto}</td>
+                        <td>${r.email || '-'}</td>
+                        <td>${r.telefono || '-'}</td>
+                        <td>${fecha}</td>
+                        <td><span class="badge badge-success">${r.estado || 'ACTIVO'}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            tablaDiv.innerHTML = html;
+        }
+
+        // Filtrar registros por DNI
+        function filtrarRegistros() {
+            const searchTerm = document.getElementById('searchDNI').value.toLowerCase();
+            const filtrados = registrosActuales.filter(r => r.dni.includes(searchTerm));
+            mostrarRegistros(filtrados);
+        }
+
+        // Cerrar vista de registros
+        function cerrarRegistros() {
+            document.getElementById('registrosSection').style.display = 'none';
+            eventoSeleccionadoId = null;
+        }
+
+        // Exportar registros
+        function exportarRegistrosActuales() {
+            if (registrosActuales.length === 0) {
+                alert('No hay registros para exportar');
+                return;
+            }
+            const nombreEvento = document.getElementById('eventoSeleccionadoNombre').textContent;
+            FirebaseAdmin.exportarCSV(registrosActuales, nombreEvento);
+        }
+
+        // Modal nuevo evento
+        function mostrarModalNuevoEvento() {
+            document.getElementById('modalNuevoEvento').style.display = 'flex';
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalNuevoEvento').style.display = 'none';
+        }
+
+        // Crear evento
+        async function crearEvento(event) {
+            event.preventDefault();
+            
+            const eventoId = document.getElementById('nuevoEventoId').value.trim().toLowerCase().replace(/\s+/g, '-');
+            const nombre = document.getElementById('nuevoEventoNombre').value;
+            const fechaInicio = new Date(document.getElementById('nuevoEventoFechaInicio').value);
+            const fechaFin = new Date(document.getElementById('nuevoEventoFechaFin').value);
+            const descripcion = document.getElementById('nuevoEventoDescripcion').value;
+            const activo = document.getElementById('nuevoEventoActivo').checked;
+            
+            try {
+                await FirebaseDB.createOrUpdateEvento(eventoId, {
+                    nombre,
+                    fechaInicio,
+                    fechaFin,
+                    descripcion,
+                    activo
+                });
+                
+                cerrarModal();
+                await cargarEstadisticas();
+                await cargarEventos();
+                alert('✅ Evento creado exitosamente');
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

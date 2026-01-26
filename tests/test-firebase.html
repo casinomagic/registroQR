@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firebase - Casino Magic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #161337; }
+        .status { 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #161337;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover { background: #2a2555; }
+        input {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Test Firebase - Casino Magic</h1>
+        <div id="status"></div>
+        
+        <hr>
+        
+        <h2>1️⃣ Crear Evento</h2>
+        <div class="form-group">
+            <label>ID del Evento:</label>
+            <input type="text" id="eventoId" value="sorteo-enero-2026">
+        </div>
+        <div class="form-group">
+            <label>Nombre del Evento:</label>
+            <input type="text" id="eventoNombre" value="Sorteo Enero 2026">
+        </div>
+        <button onclick="crearEvento()">Crear Evento</button>
+        
+        <hr>
+        
+        <h2>2️⃣ Registrar Participante</h2>
+        <div class="form-group">
+            <label>DNI:</label>
+            <input type="text" id="dni" value="12345678" maxlength="8">
+        </div>
+        <div class="form-group">
+            <label>Nombre Completo:</label>
+            <input type="text" id="nombre" value="Juan Pérez">
+        </div>
+        <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="email" value="juan@example.com">
+        </div>
+        <div class="form-group">
+            <label>Teléfono:</label>
+            <input type="tel" id="telefono" value="1123456789">
+        </div>
+        <button onclick="registrar()">Registrar</button>
+        <button onclick="verificarDni()">Verificar DNI</button>
+        
+        <hr>
+        
+        <h2>3️⃣ Consultas</h2>
+        <button onclick="obtenerRegistros()">Ver Registros</button>
+        <button onclick="obtenerPendientes()">Ver Pendientes Sync</button>
+        <button onclick="obtenerEventoActivo()">Ver Evento Activo</button>
+        
+        <div id="resultados"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Config y DB -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase-db.js"></script>
+    
+    <script>
+        // Inicializar Firebase
+        if (FirebaseDB.initFirestore()) {
+            mostrarEstado('✅ Firebase conectado correctamente', 'success');
+            // Establecer evento por defecto
+            FirebaseDB.setEventoActual('sorteo-enero-2026');
+        } else {
+            mostrarEstado('❌ Error conectando Firebase', 'error');
+        }
+        
+        function mostrarEstado(mensaje, tipo = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${tipo}">${mensaje}</div>`;
+        }
+        
+        function mostrarResultado(data) {
+            const resultadosDiv = document.getElementById('resultados');
+            resultadosDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        
+        async function crearEvento() {
+            try {
+                const eventoId = document.getElementById('eventoId').value;
+                const nombre = document.getElementById('eventoNombre').value;
+                
+                await FirebaseDB.createOrUpdateEvento(eventoId, {
+                    nombre: nombre,
+                    fechaInicio: new Date('2026-01-01'),
+                    fechaFin: new Date('2026-01-31'),
+                    activo: true,
+                    descripcion: 'Evento de prueba'
+                });
+                
+                FirebaseDB.setEventoActual(eventoId);
+                mostrarEstado(`✅ Evento "${nombre}" creado exitosamente`, 'success');
+            } catch (error) {
+                mostrarEstado('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function registrar() {
+            try {
+                const dni = document.getElementById('dni').value;
+                const nombre = document.getElementById('nombre').value;
+                const email = document.getElementById('email').value;
+                const telefono = document.getElementById('telefono').value;
+                
+                const resultado = await FirebaseDB.createRegistro({
+                    dni: dni,
+                    nombreCompleto: nombre,
+                    fechaNacimiento: '1990-05-15',
+                    email: email,
+                    telefono: telefono,
+                    fechaEvento: new Date().toISOString().split('T')[0],
+                    horaEvento: new Date().toTimeString().split(' ')[0],
+                    ipAddress: '127.0.0.1'
+                });
+                
+                if (resultado.status === 'SUCCESS') {
+                    mostrarEstado('✅ Registro creado exitosamente', 'success');
+                } else if (resultado.status === 'DUPLICATE') {
+                    mostrarEstado('⚠️ ' + resultado.message, 'error');
+                }
+                
+                mostrarResultado(resultado);
+            } catch (error) {
+                mostrarEstado('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function verificarDni() {
+            try {
+                const dni = document.getElementById('dni').value;
+                const resultado = await FirebaseDB.checkDniExists(dni);
+                
+                if (resultado.exists) {
+                    mostrarEstado('⚠️ DNI ya registrado en este evento', 'error');
+                } else {
+                    mostrarEstado('✅ DNI disponible para registro', 'success');
+                }
+                
+                mostrarResultado(resultado);
+            } catch (error) {
+                mostrarEstado('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function obtenerRegistros() {
+            try {
+                const registros = await FirebaseDB.getRegistros(100);
+                mostrarEstado(`✅ ${registros.length} registros encontrados`, 'success');
+                mostrarResultado(registros);
+            } catch (error) {
+                mostrarEstado('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function obtenerPendientes() {
+            try {
+                const pendientes = await FirebaseDB.getPendientesSincronizacion();
+                mostrarEstado(`✅ ${pendientes.length} pendientes de sincronización`, 'success');
+                mostrarResultado(pendientes);
+            } catch (error) {
+                mostrarEstado('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function obtenerEventoActivo() {
+            try {
+                const evento = await FirebaseDB.getEventoActivo();
+                if (evento) {
+                    mostrarEstado(`✅ Evento activo: ${evento.nombre}`, 'success');
+                    mostrarResultado(evento);
+                } else {
+                    mostrarEstado('⚠️ No hay eventos activos', 'info');
+                }
+            } catch (error) {
+                mostrarEstado('❌ Error: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

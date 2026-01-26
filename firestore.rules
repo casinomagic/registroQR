@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isValidDNI(dni) {
+      return dni.matches('^[0-9]{7,8}$');
+    }
+    
+    function isEventoActivo(eventoId) {
+      return get(/databases/$(database)/documents/eventos/$(eventoId)).data.activo == true;
+    }
+    
+    // Colección de eventos
+    match /eventos/{eventoId} {
+      // Permitir lectura pública de eventos activos
+      allow read: if resource.data.activo == true;
+      
+      // Solo admin puede crear/modificar/eliminar eventos (desde Firebase Console)
+      allow create, update, delete: if false;
+      
+      // Subcolección de registros por evento
+      match /registros/{dni} {
+        // Permitir crear registro si:
+        // 1. El DNI coincide con el documento (evita manipulación)
+        // 2. El evento está activo
+        // 3. El DNI es válido (7-8 dígitos)
+        // 4. Tiene todos los campos requeridos
+        allow create: if request.resource.data.dni == dni 
+                      && isValidDNI(dni)
+                      && isEventoActivo(eventoId)
+                      && request.resource.data.keys().hasAll(['nombre', 'apellido', 'email', 'dni', 'timestamp', 'eventoId']);
+        
+        // Lectura deshabilitada (solo admin desde Firebase Console)
+        allow read: if false;
+        
+        // No permitir actualización ni eliminación (registros inmutables)
+        allow update, delete: if false;
+      }
+    }
+  }
+}
