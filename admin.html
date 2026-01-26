@@ -41,7 +41,15 @@
 
         <!-- Lista de Eventos -->
         <div class="content-section">
-            <h2>📅 Eventos</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">📅 Gestión de Eventos</h2>
+            </div>
+            
+            <!-- Alerta informativa -->
+            <div class="alert alert-info" style="margin-bottom: 20px;">
+                <strong>ℹ️ Importante:</strong> Solo un evento puede estar activo a la vez. Al activar un evento, cualquier otro evento activo se desactivará automáticamente.
+            </div>
+            
             <div id="eventosLista">
                 <div class="spinner"></div>
             </div>
@@ -99,12 +107,11 @@
                     <label>Descripción:</label>
                     <textarea id="nuevoEventoDescripcion" rows="3" placeholder="Descripción del evento..."></textarea>
                 </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="nuevoEventoActivo">
-                        Activar este evento inmediatamente
-                    </label>
+                
+                <div class="alert alert-info" style="font-size: 13px;">
+                    ℹ️ El evento se creará <strong>desactivado</strong>. Podés activarlo luego desde la lista de eventos.
                 </div>
+                
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Crear Evento</button>
             </form>
         </div>
@@ -227,45 +234,92 @@
                 return;
             }
             
-            let html = '<table><thead><tr><th>ID</th><th>Nombre</th><th>Fecha Inicio</th><th>Fecha Fin</th><th>Estado</th><th>Registros</th><th>Acciones</th></tr></thead><tbody>';
+            let html = '<div class="eventos-table-wrapper"><table class="eventos-table"><thead><tr><th>Evento</th><th>Período</th><th>Estado</th><th>Registros</th><th style="text-align: center;">Acciones</th></tr></thead><tbody>';
             
             for (const evento of eventosData) {
                 const stats = await FirebaseAdmin.getEstadisticasEvento(evento.id);
-                const fechaInicio = evento.fechaInicio?.toDate ? evento.fechaInicio.toDate().toLocaleDateString() : 'N/A';
-                const fechaFin = evento.fechaFin?.toDate ? evento.fechaFin.toDate().toLocaleDateString() : 'N/A';
+                const fechaInicio = evento.fechaInicio?.toDate ? evento.fechaInicio.toDate().toLocaleDateString('es-AR') : 'N/A';
+                const fechaFin = evento.fechaFin?.toDate ? evento.fechaFin.toDate().toLocaleDateString('es-AR') : 'N/A';
+                
+                const estadoClass = evento.activo ? 'evento-activo' : 'evento-inactivo';
+                const estadoIcon = evento.activo ? '🟢' : '⚫';
                 
                 html += `
-                    <tr>
-                        <td><strong>${evento.id}</strong></td>
-                        <td>${evento.nombre}</td>
-                        <td>${fechaInicio}</td>
-                        <td>${fechaFin}</td>
-                        <td>${evento.activo ? '<span class="badge badge-success">ACTIVO</span>' : '<span class="badge badge-danger">INACTIVO</span>'}</td>
-                        <td><strong>${stats.total}</strong></td>
+                    <tr class="${estadoClass}">
                         <td>
-                            <button class="btn ${evento.activo ? 'btn-warning' : 'btn-success'}" onclick="toggleEvento('${evento.id}', ${!evento.activo})" style="padding: 5px 10px; font-size: 12px;">
-                                ${evento.activo ? 'Desactivar' : 'Activar'}
-                            </button>
-                            <button class="btn btn-info" onclick="verRegistros('${evento.id}', '${evento.nombre}')" style="padding: 5px 10px; font-size: 12px;">
-                                Ver Registros
-                            </button>
+                            <div style="display: flex; flex-direction: column;">
+                                <strong style="font-size: 15px; color: var(--primary);">${evento.nombre}</strong>
+                                <small style="color: #666; margin-top: 3px;">ID: ${evento.id}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 3px;">
+                                <span>📅 ${fechaInicio}</span>
+                                <span>📅 ${fechaFin}</span>
+                            </div>
+                        </td>
+                        <td>
+                            ${evento.activo ? 
+                                '<span class="badge badge-success" style="font-size: 13px;">' + estadoIcon + ' ACTIVO</span>' : 
+                                '<span class="badge badge-danger" style="font-size: 13px;">' + estadoIcon + ' INACTIVO</span>'}
+                        </td>
+                        <td>
+                            <div style="text-align: center;">
+                                <strong style="font-size: 20px; color: var(--primary);">${stats.total}</strong>
+                                <div style="font-size: 11px; color: #666;">participantes</div>
+                            </div>
+                        </td>
+                        <td style="text-align: center;">
+                            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                <button class="btn ${evento.activo ? 'btn-warning' : 'btn-success'}" onclick="toggleEvento('${evento.id}', ${!evento.activo})" style="padding: 8px 15px; font-size: 13px; min-width: 110px;">
+                                    ${evento.activo ? '⏸️ Desactivar' : '▶️ Activar'}
+                                </button>
+                                <button class="btn btn-info" onclick="verRegistros('${evento.id}', '${evento.nombre}')" style="padding: 8px 15px; font-size: 13px;">
+                                    👥 Ver Registros
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
             }
             
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
             listaDiv.innerHTML = html;
         }
 
         // Toggle evento activo/inactivo
         async function toggleEvento(eventoId, activo) {
             try {
+                // Si se va a activar este evento
+                if (activo) {
+                    // Buscar el evento activo actual
+                    const eventoActivo = eventosData.find(e => e.activo && e.id !== eventoId);
+                    
+                    if (eventoActivo) {
+                        const confirmar = confirm(
+                            `⚠️ ATENCIÓN\n\n` +
+                            `El evento "${eventoActivo.nombre}" está activo actualmente.\n\n` +
+                            `¿Querés desactivarlo y activar "${eventosData.find(e => e.id === eventoId).nombre}"?`
+                        );
+                        
+                        if (!confirmar) {
+                            return; // Cancelar si el usuario no confirma
+                        }
+                        
+                        // Desactivar el evento activo actual
+                        await FirebaseAdmin.toggleEventoActivo(eventoActivo.id, false);
+                    }
+                }
+                
+                // Activar o desactivar el evento seleccionado
                 await FirebaseAdmin.toggleEventoActivo(eventoId, activo);
                 await cargarEstadisticas();
                 await cargarEventos();
+                
+                const mensaje = activo ? '✅ Evento activado exitosamente' : '✅ Evento desactivado';
+                alert(mensaje);
             } catch (error) {
-                alert('Error: ' + error.message);
+                alert('❌ Error: ' + error.message);
             }
         }
 
@@ -350,21 +404,29 @@
             const fechaInicio = new Date(document.getElementById('nuevoEventoFechaInicio').value);
             const fechaFin = new Date(document.getElementById('nuevoEventoFechaFin').value);
             const descripcion = document.getElementById('nuevoEventoDescripcion').value;
-            const activo = document.getElementById('nuevoEventoActivo').checked;
             
             try {
+                // Siempre crear evento desactivado
                 await FirebaseDB.createOrUpdateEvento(eventoId, {
                     nombre,
                     fechaInicio,
                     fechaFin,
                     descripcion,
-                    activo
+                    activo: false
                 });
                 
                 cerrarModal();
+                
+                // Limpiar formulario
+                document.getElementById('nuevoEventoId').value = '';
+                document.getElementById('nuevoEventoNombre').value = '';
+                document.getElementById('nuevoEventoFechaInicio').value = '';
+                document.getElementById('nuevoEventoFechaFin').value = '';
+                document.getElementById('nuevoEventoDescripcion').value = '';
+                
                 await cargarEstadisticas();
                 await cargarEventos();
-                alert('✅ Evento creado exitosamente');
+                alert('✅ Evento creado exitosamente\n\n📌 El evento está desactivado. Podés activarlo desde la lista de eventos.');
             } catch (error) {
                 alert('❌ Error: ' + error.message);
             }
