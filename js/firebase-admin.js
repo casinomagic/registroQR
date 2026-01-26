@@ -84,6 +84,49 @@ async function cerrarSesion() {
 }
 
 /**
+ * Verificar y corregir si hay múltiples eventos activos
+ * Solo debe haber 1 evento activo a la vez
+ */
+async function verificarYCorregirEventosActivos() {
+    try {
+        const db = firebase.firestore();
+        const eventosActivos = await db.collection('eventos').where('activo', '==', true).get();
+        
+        if (eventosActivos.size > 1) {
+            console.warn(`⚠️ Se encontraron ${eventosActivos.size} eventos activos. Corrigiendo...`);
+            
+            // Mantener solo el más reciente activo
+            const eventos = [];
+            eventosActivos.forEach(doc => {
+                eventos.push({
+                    id: doc.id,
+                    ref: doc.ref,
+                    actualizadoEn: doc.data().actualizadoEn?.toDate() || new Date(0)
+                });
+            });
+            
+            // Ordenar por fecha de actualización (más reciente primero)
+            eventos.sort((a, b) => b.actualizadoEn - a.actualizadoEn);
+            
+            // Desactivar todos excepto el primero
+            const batch = db.batch();
+            for (let i = 1; i < eventos.length; i++) {
+                batch.update(eventos[i].ref, { activo: false });
+            }
+            await batch.commit();
+            
+            console.log(`✅ Corregido: Se mantuvo activo ${eventos[0].id} y se desactivaron ${eventos.length - 1} eventos`);
+            return eventos[0].id; // Retorna el ID del evento que quedó activo
+        }
+        
+        return null; // No hubo correcciones
+    } catch (error) {
+        console.error('❌ Error verificando eventos activos:', error);
+        return null;
+    }
+}
+
+/**
  * Obtener todos los eventos
  */
 async function getAllEventos() {
@@ -311,6 +354,7 @@ window.FirebaseAdmin = {
     guardarSesionAdmin,
     verificarSesion,
     cerrarSesion,
+    verificarYCorregirEventosActivos,
     getAllEventos,
     toggleEventoActivo,
     eliminarEvento,

@@ -187,6 +187,12 @@
                 return;
             }
             
+            // Verificar y corregir eventos activos
+            const eventoCorregido = await FirebaseAdmin.verificarYCorregirEventosActivos();
+            if (eventoCorregido) {
+                console.log(`ℹ️ Se corrigió automáticamente: solo el evento "${eventoCorregido}" está activo`);
+            }
+            
             // Cargar datos
             await cargarEstadisticas();
             await cargarEventos();
