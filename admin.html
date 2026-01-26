@@ -119,6 +119,10 @@
     <script src="js/firebase-admin.min.js"></script>
     
     <script>
+        // Inicializar Firebase PRIMERO
+        firebase.initializeApp(window.FIREBASE_CONFIG);
+        console.log('✅ Firebase inicializado');
+        
         let eventosData = [];
         let registrosActuales = [];
         let eventoSeleccionadoId = null;
