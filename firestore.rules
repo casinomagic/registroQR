@@ -11,13 +11,17 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/eventos/$(eventoId)).data.activo == true;
     }
     
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
     // Colección de eventos
     match /eventos/{eventoId} {
       // Permitir lectura pública de eventos activos
       allow read: if resource.data.activo == true;
       
-      // Solo admin puede crear/modificar/eliminar eventos (desde Firebase Console)
-      allow create, update, delete: if false;
+      // Admin autenticado puede hacer todo
+      allow read, create, update, delete: if isAuthenticated();
       
       // Subcolección de registros por evento
       match /registros/{dni} {
@@ -31,8 +35,8 @@ service cloud.firestore {
                       && isEventoActivo(eventoId)
                       && request.resource.data.keys().hasAll(['nombre', 'apellido', 'email', 'dni', 'timestamp', 'eventoId']);
         
-        // Lectura deshabilitada (solo admin desde Firebase Console)
-        allow read: if false;
+        // Admin autenticado puede leer todo
+        allow read: if isAuthenticated();
         
         // No permitir actualización ni eliminación (registros inmutables)
         allow update, delete: if false;
