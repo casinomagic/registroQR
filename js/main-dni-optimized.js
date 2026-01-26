@@ -540,16 +540,21 @@ async function sendRegistration(data, retries = 2) {
         try {
             debugLog('🔥 Registrando con Firebase...');
             
-            const resultado = await FirebaseDB.createRegistro({
+            // Preparar datos - solo enviar campos que existen
+            const registroData = {
                 dni: data.dni,
                 nombreCompleto: data.nombreCompleto,
                 fechaNacimiento: data.fechaNacimiento,
                 email: data.email,
                 telefono: data.telefono,
-                fechaEvento: data.fechaEvento,
-                horaEvento: data.horaEvento,
                 ipAddress: data.ipAddress || '0.0.0.0'
-            });
+            };
+            
+            // Solo agregar fechaEvento y horaEvento si existen
+            if (data.fechaEvento) registroData.fechaEvento = data.fechaEvento;
+            if (data.horaEvento) registroData.horaEvento = data.horaEvento;
+            
+            const resultado = await FirebaseDB.createRegistro(registroData);
             
             debugLog('📋 Resultado Firebase:', resultado);
             return resultado;
