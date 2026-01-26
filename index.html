@@ -10,7 +10,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#161337">
-    <style>
+    <style id="dynamicStyles">
+        /* Estilos dinámicos se cargarán aquí */
         button:disabled {
             background-color: #cccccc;
             color: 666666;
@@ -30,14 +31,14 @@
         <!-- Logo móvil (se muestra cuando hay colaborador seleccionado) -->
         <div id="topLogo" class="top-logo" style="display: none;">
             <div class="logo-container">
-                <img src="img/Pie blanco.png" alt="Juego Responsable Logo" class="logo-image">
+                <img id="logoFooterImg" src="img/Pie blanco.png" alt="Juego Responsable Logo" class="logo-image">
             </div>
         </div>
 
         <!-- Cabecera con gradiente -->
         <div class="header">
             <div class="header-content">
-                <img src="img/Estrella-Solita-Blanca.png" alt="Estrella Logo" class="header-image">
+                <img id="logoHeaderImg" src="img/Estrella-Solita-Blanca.png" alt="Estrella Logo" class="header-image">
             </div>
         </div>
 
@@ -51,7 +52,7 @@
                 <!-- PANTALLA 1: Verificación de DNI -->
                 <div id="dniScreen" class="screen">
                     <div class="dni-section">
-                        <h2 class="content-title">Participá de los sorteos</h2>
+                        <h2 id="tituloFormulario" class="content-title">Participá de los sorteos</h2>
                         <p id="eventoNombre" style="text-align: center; color: #666; font-size: 16px; margin: 10px 0 20px 0; min-height: 24px;">
                             Cargando evento...
                         </p>
@@ -203,6 +204,59 @@
 
     <!-- Script para cerrar página -->
     <script src="js/close-page.js"></script>
+
+    <!-- Script para cargar configuración visual -->
+    <script>
+        // Cargar configuración visual al iniciar
+        (async function cargarConfiguracionVisual() {
+            try {
+                const db = firebase.firestore();
+                const doc = await db.collection('configuracion').doc('visual').get();
+                
+                if (doc.exists) {
+                    const config = doc.data();
+                    
+                    // Aplicar colores
+                    if (config.colorPrimario) {
+                        document.documentElement.style.setProperty('--color-primary', config.colorPrimario);
+                    }
+                    if (config.colorSecundario) {
+                        document.documentElement.style.setProperty('--color-secondary', config.colorSecundario);
+                    }
+                    if (config.colorFondo) {
+                        document.body.style.backgroundColor = config.colorFondo;
+                    }
+                    
+                    // Aplicar logos
+                    if (config.logoHeader) {
+                        const logoHeader = document.getElementById('logoHeaderImg');
+                        if (logoHeader) logoHeader.src = config.logoHeader;
+                    }
+                    if (config.logoFooter) {
+                        const logoFooter = document.getElementById('logoFooterImg');
+                        if (logoFooter) logoFooter.src = config.logoFooter;
+                    }
+                    
+                    // Aplicar textos
+                    if (config.titulo) {
+                        const titulo = document.getElementById('tituloFormulario');
+                        if (titulo) titulo.textContent = config.titulo;
+                    }
+                    
+                    // Guardar mensaje de éxito para usar después
+                    if (config.mensajeExito) {
+                        window.MENSAJE_EXITO = config.mensajeExito;
+                    }
+                    
+                    console.log('✅ Configuración visual cargada');
+                } else {
+                    console.log('ℹ️ Usando configuración visual por defecto');
+                }
+            } catch (error) {
+                console.error('❌ Error cargando configuración visual:', error);
+            }
+        })();
+    </script>
 </body>
 
 </html>

@@ -15,6 +15,15 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    // Colección de configuración
+    match /configuracion/{configId} {
+      // Permitir lectura pública de la configuración visual
+      allow read: if true;
+      
+      // Solo admin autenticado puede modificar
+      allow create, update, delete: if isAuthenticated();
+    }
+    
     // Colección de eventos
     match /eventos/{eventoId} {
       // Permitir lectura pública de eventos activos
