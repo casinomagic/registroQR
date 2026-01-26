@@ -35,8 +35,12 @@ service cloud.firestore {
                       && isEventoActivo(eventoId)
                       && request.resource.data.keys().hasAll(['nombre', 'apellido', 'email', 'dni', 'timestamp', 'eventoId']);
         
-        // Admin autenticado puede leer todo
-        allow read: if isAuthenticated();
+        // Permitir lectura pública de un DNI específico (para verificar duplicados)
+        // Solo si el evento está activo
+        allow read: if isValidDNI(dni) && isEventoActivo(eventoId);
+        
+        // Admin autenticado puede leer todo con collectionGroup
+        allow list: if isAuthenticated();
         
         // No permitir actualización ni eliminación (registros inmutables)
         allow update, delete: if false;
