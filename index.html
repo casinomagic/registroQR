@@ -216,15 +216,30 @@
                 if (doc.exists) {
                     const config = doc.data();
                     
-                    // Aplicar colores
+                    // Aplicar colores dinámicamente con !important
                     if (config.colorPrimario) {
+                        // Aplicar a la variable CSS
                         document.documentElement.style.setProperty('--color-primary', config.colorPrimario);
+                        
+                        // Aplicar también directamente a elementos clave
+                        const style = document.createElement('style');
+                        style.id = 'dynamic-colors';
+                        style.textContent = `
+                            .header { background: ${config.colorPrimario} !important; }
+                            .btn-primary { background-color: ${config.colorPrimario} !important; }
+                            .btn-primary:hover { background-color: ${config.colorPrimario} !important; opacity: 0.9; }
+                        `;
+                        document.head.appendChild(style);
                     }
+                    
                     if (config.colorSecundario) {
                         document.documentElement.style.setProperty('--color-secondary', config.colorSecundario);
                     }
+                    
                     if (config.colorFondo) {
                         document.body.style.backgroundColor = config.colorFondo;
+                        const container = document.querySelector('.container');
+                        if (container) container.style.backgroundColor = config.colorFondo;
                     }
                     
                     // Aplicar logos
@@ -248,7 +263,7 @@
                         window.MENSAJE_EXITO = config.mensajeExito;
                     }
                     
-                    console.log('✅ Configuración visual cargada');
+                    console.log('✅ Configuración visual cargada:', config);
                 } else {
                     console.log('ℹ️ Usando configuración visual por defecto');
                 }
