@@ -3664,6 +3664,24 @@ body.hide-header .already-registered {
     letter-spacing: 0.5px;
 }
 
+.registration-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+
+.registration-header-top .content-title {
+    margin-bottom: 0;
+}
+
+.registration-header-top .dni-display {
+    padding: 8px 15px;
+    font-size: 1rem;
+}
+
 /* Pantalla 3: Ya registrado */
 .already-registered {
     text-align: center;
