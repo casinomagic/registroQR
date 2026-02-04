@@ -2342,7 +2342,31 @@ body {
 .btn-success-primary:hover {
     background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-secondary) 50%, var(--color-primary) 100%) !important;
     transform: translateY(-2px) !important;
+    transform: translateY(-2px) !important;
     box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-success-secondary {
+    background: #4b5563 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 15px 40px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    font-family: 'Kanit', sans-serif !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    min-width: 150px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-success-secondary:hover {
+    background: #374151 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3) !important;
 }
 
 .success-actions .btn {

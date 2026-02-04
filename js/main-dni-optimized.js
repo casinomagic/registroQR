@@ -128,14 +128,14 @@ async function initializeFirebase() {
         if (window.FirebaseDB && FirebaseDB.initFirestore()) {
             debugLog('✅ Firebase inicializado');
             usingFirebase = true;
-            
+
             // Detectar evento activo
             const evento = await FirebaseDB.getEventoActivo();
             if (evento) {
                 eventoActual = evento;
                 FirebaseDB.setEventoActual(evento.id);
                 debugLog('✅ Evento activo:', evento.nombre);
-                
+
                 // Mostrar nombre del evento en la página
                 const eventoNombreElement = document.getElementById('eventoNombre');
                 if (eventoNombreElement) {
@@ -148,7 +148,7 @@ async function initializeFirebase() {
                 // Fallback: usar evento por defecto
                 eventoActual = { id: 'evento-default', nombre: 'Evento Principal' };
                 FirebaseDB.setEventoActual('evento-default');
-                
+
                 // Mostrar mensaje de evento por defecto
                 const eventoNombreElement = document.getElementById('eventoNombre');
                 if (eventoNombreElement) {
@@ -159,7 +159,7 @@ async function initializeFirebase() {
         } else {
             console.warn('⚠️ Firebase no disponible, usando fallback');
             usingFirebase = false;
-            
+
             // Ocultar elemento de nombre de evento si no hay Firebase
             const eventoNombreElement = document.getElementById('eventoNombre');
             if (eventoNombreElement) {
@@ -169,7 +169,7 @@ async function initializeFirebase() {
     } catch (error) {
         console.error('❌ Error inicializando Firebase:', error);
         usingFirebase = false;
-        
+
         // Mostrar error discretamente
         const eventoNombreElement = document.getElementById('eventoNombre');
         if (eventoNombreElement) {
@@ -335,8 +335,8 @@ async function handleRegistrationSubmit(event) {
             debugLog('⚠️ DNI duplicado');
             showMessage('Este DNI ya está registrado. Recordá que el ganador debe estar presente en el evento.', 'warning');
             // Compatibilidad con ambos formatos de respuesta
-            const existingData = response.data || response.existingData || { 
-                dni: currentDni, 
+            const existingData = response.data || response.existingData || {
+                dni: currentDni,
                 nombreCompleto: 'Participante',
                 nombre: 'Participante'
             };
@@ -468,7 +468,7 @@ function validatePersonalData() {
     // Validar edad mínima de 18 años
     const ageValidation = validateAge(elements.fechaNacimientoInput.value);
     if (!ageValidation.valid) {
-        showMessage(ageValidation.message, 'error');
+        showErrorModal(ageValidation.message);
         elements.fechaNacimientoInput.focus();
         return false;
     }
@@ -539,7 +539,7 @@ async function sendRegistration(data, retries = 2) {
     if (usingFirebase && window.FirebaseDB) {
         try {
             debugLog('🔥 Registrando con Firebase...');
-            
+
             // Preparar datos - solo enviar campos que existen
             const registroData = {
                 dni: data.dni,
@@ -549,22 +549,22 @@ async function sendRegistration(data, retries = 2) {
                 telefono: data.telefono,
                 ipAddress: data.ipAddress || '0.0.0.0'
             };
-            
+
             // Solo agregar fechaEvento y horaEvento si existen
             if (data.fechaEvento) registroData.fechaEvento = data.fechaEvento;
             if (data.horaEvento) registroData.horaEvento = data.horaEvento;
-            
+
             const resultado = await FirebaseDB.createRegistro(registroData);
-            
+
             debugLog('📋 Resultado Firebase:', resultado);
             return resultado;
-            
+
         } catch (error) {
             console.error('❌ Error con Firebase:', error);
             throw error;
         }
     }
-    
+
     // Fallback a Google Apps Script (código original mantenido por seguridad)
     console.warn('⚠️ Usando fallback a Google Sheets');
     return await sendRegistrationToGoogleSheets(data, retries);
@@ -575,7 +575,7 @@ async function sendRegistrationToGoogleSheets(data, retries = 2) {
     const CONFIG = window.APP_CONFIG || {
         apiUrl: 'https://script.google.com/macros/s/AKfycbwf-1NsI6gyUqR9_Bk_N5B06R9CiY05Rfn9K2xHao7UfZJS2e3OLlmAqONzBc9noo4A/exec'
     };
-    
+
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
             const callbackName = 'callback_' + Date.now();
@@ -631,12 +631,13 @@ function showSuccessMessage(nombreCompleto) {
             <h2>Registro Exitoso</h2>
             <div class="success-details">
                 <p><strong>${nombreCompleto}</strong></p>
-                <p>Tu registro ha sido completado correctamente.<br>Recordá que el ganador debe estar presente en el evento.</p>
+                <p>Tu registro ha sido completado correctamente.</p>
             </div>
             <div class="success-actions">
-                <button type="button" class="btn btn-success-primary" id="closeSuccessBtn">FINALIZAR</button>
+                <button type="button" class="btn btn-success-primary" id="registerAnotherBtn" style="margin-bottom: 10px;">REGISTRAR OTRO</button>
+                <button type="button" class="btn btn-success-secondary" id="closeSuccessBtn">FINALIZAR</button>
                 <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                    ¡Registro completado! Al hacer clic se cerrará la ventana o serás redirigido.
+                    ¡Registro completado! Al finalizar se cerrará la ventana o serás redirigido.
                 </p>
             </div>
         </div>
@@ -645,7 +646,13 @@ function showSuccessMessage(nombreCompleto) {
     // Agregar al body
     document.body.appendChild(successModal);
 
-    // Agregar event listener
+    // Event listener para Registrar Otro
+    successModal.querySelector('#registerAnotherBtn').addEventListener('click', () => {
+        debugLog('🔄 Recargando para nuevo registro');
+        window.location.reload();
+    });
+
+    // Event listener para Finalizar
     successModal.querySelector('#closeSuccessBtn').addEventListener('click', () => {
         debugLog('🎯 Botón FINALIZAR presionado');
         debugLog('📱 Dispositivo móvil:', DEVICE_INFO.isMobile);
@@ -763,6 +770,48 @@ function updateLoadingModal(title, message, state = 'processing') {
 
         debugLog('🔄 Modal de carga actualizado:', title, `(${state})`);
     }
+}
+
+// ===== MODAL DE ERROR (Fecha inválida) =====
+function showErrorModal(message) {
+    // Si ya existe uno, removerlo
+    const existingModal = document.getElementById('customErrorModal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'customErrorModal';
+    modal.className = 'submission-loading'; // Reutilizamos estilos de overlay
+    modal.style.display = 'flex';
+
+    modal.innerHTML = `
+        <div class="loading-content error-state" style="border-top: 5px solid #dc2626;">
+             <div class="error-icon" style="font-size: 3.5rem; margin-bottom: 15px; animation: bounceIn 0.5s;">⚠️</div>
+            <h2 style="color: #dc2626; margin-bottom: 10px;">Atención</h2>
+            <p style="font-size: 1.1rem; color: #333;">${message}</p>
+            <button type="button" class="btn" id="closeErrorModalBtn" style="
+                margin-top: 25px; 
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+                width: auto;
+                min-width: 150px;
+            ">ENTENDIDO</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Animation
+    const content = modal.querySelector('.loading-content');
+    content.style.animation = 'slideInUp 0.3s ease-out';
+
+    // Close handler
+    const closeBtn = modal.querySelector('#closeErrorModalBtn');
+    closeBtn.focus();
+
+    closeBtn.addEventListener('click', () => {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 300);
+    });
 }
 
 
