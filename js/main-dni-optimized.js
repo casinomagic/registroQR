@@ -501,7 +501,7 @@ function validatePersonalData() {
 
 
     if (!elements.participantConfirms?.checked) {
-        showMessage('Debés confirmar tu participación.', 'error');
+        showErrorModal('Aceptá las bases y condiciones para continuar.');
         return false;
     }
 

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Admin - Casino Magic</title>
     <link rel="stylesheet" href="css/admin.min.css">
 </head>
+
 <body>
     <!-- PANTALLA DE LOGIN -->
     <div class="login-container" id="loginScreen">
@@ -29,7 +31,8 @@
                 <p style="color: #666;">Casino Magic - Gestión de Eventos</p>
             </div>
             <div>
-                <button class="btn btn-primary" onclick="mostrarModalNuevoEvento()">+ Nuevo Evento</button>
+                <button class="btn btn-primary" id="btnNuevoEvento" onclick="mostrarModalNuevoEvento()">+ Nuevo
+                    Evento</button>
                 <button class="btn btn-danger" onclick="FirebaseAdmin.cerrarSesion()">Cerrar Sesión</button>
             </div>
         </div>
@@ -44,12 +47,13 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0;">📅 Gestión de Eventos</h2>
             </div>
-            
+
             <!-- Alerta informativa -->
             <div class="alert alert-info" style="margin-bottom: 20px;">
-                <strong>ℹ️ Importante:</strong> Solo un evento puede estar activo a la vez. Al activar un evento, cualquier otro evento activo se desactivará automáticamente.
+                <strong>ℹ️ Importante:</strong> Solo un evento puede estar activo a la vez. Al activar un evento,
+                cualquier otro evento activo se desactivará automáticamente.
             </div>
-            
+
             <div id="eventosLista">
                 <div class="spinner"></div>
             </div>
@@ -64,11 +68,11 @@
                     <button class="btn btn-secondary" onclick="cerrarRegistros()">Cerrar</button>
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <input type="text" id="searchDNI" placeholder="Buscar por DNI..." onkeyup="filtrarRegistros()">
             </div>
-            
+
             <div id="registrosTabla">
                 <div class="spinner"></div>
             </div>
@@ -107,11 +111,12 @@
                     <label>Descripción:</label>
                     <textarea id="nuevoEventoDescripcion" rows="3" placeholder="Descripción del evento..."></textarea>
                 </div>
-                
+
                 <div class="alert alert-info" style="font-size: 13px;">
-                    ℹ️ El evento se creará <strong>desactivado</strong>. Podés activarlo luego desde la lista de eventos.
+                    ℹ️ El evento se creará <strong>desactivado</strong>. Podés activarlo luego desde la lista de
+                    eventos.
                 </div>
-                
+
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Crear Evento</button>
             </form>
         </div>
@@ -121,34 +126,34 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    
+
     <!-- Scripts -->
     <script src="js/firebase-config.js"></script>
     <script src="js/firebase-db.min.js"></script>
     <script src="js/firebase-admin.min.js"></script>
-    
+
     <script>
         // Inicializar Firebase PRIMERO
         firebase.initializeApp(window.FIREBASE_CONFIG);
         console.log('✅ Firebase inicializado');
-        
+
         let eventosData = [];
         let registrosActuales = [];
         let eventoSeleccionadoId = null;
 
         // Al cargar la página - Verificar estado de autenticación de Firebase
-        window.onload = function() {
+        window.onload = function () {
             // Escuchar cambios en el estado de autenticación
             firebase.auth().onAuthStateChanged(async (user) => {
                 if (user) {
                     // Usuario autenticado - Esperar a que el token esté listo
                     console.log('✅ Usuario autenticado:', user.email);
-                    
+
                     try {
                         // Asegurarse de que el token de autenticación esté disponible
                         await user.getIdToken();
                         console.log('✅ Token de autenticación obtenido');
-                        
+
                         // Ahora sí iniciar el panel
                         await iniciarPanel();
                     } catch (error) {
@@ -170,13 +175,13 @@
             const email = document.getElementById('emailInput').value;
             const password = document.getElementById('passwordInput').value;
             const errorDiv = document.getElementById('loginError');
-            
+
             if (!email || !password) {
                 errorDiv.textContent = '❌ Ingrese email y contraseña';
                 setTimeout(() => errorDiv.textContent = '', 3000);
                 return;
             }
-            
+
             try {
                 // Intentar login con Firebase Authentication
                 // Firebase Auth maneja automáticamente la persistencia de sesión
@@ -203,19 +208,26 @@
             try {
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
-                
+
+                // Restricción de usuario conflu@casinomagic.com.ar
+                const user = firebase.auth().currentUser;
+                if (user && user.email === 'conflu@casinomagic.com.ar') {
+                    const btnNuevo = document.getElementById('btnNuevoEvento');
+                    if (btnNuevo) btnNuevo.style.display = 'none';
+                }
+
                 // Inicializar Firebase
                 if (!FirebaseDB.initFirestore()) {
                     alert('Error conectando con Firebase');
                     return;
                 }
-                
+
                 // Verificar y corregir eventos activos
                 const eventoCorregido = await FirebaseAdmin.verificarYCorregirEventosActivos();
                 if (eventoCorregido) {
                     console.log(`ℹ️ Se corrigió automáticamente: solo el evento "${eventoCorregido}" está activo`);
                 }
-                
+
                 // Cargar datos
                 await cargarEstadisticas();
                 await cargarEventos();
@@ -232,16 +244,16 @@
         async function cargarEstadisticas() {
             const statsGrid = document.getElementById('statsGrid');
             const eventos = await FirebaseAdmin.getAllEventos();
-            
+
             let totalRegistros = 0;
             let eventosActivos = 0;
-            
+
             for (const evento of eventos) {
                 const stats = await FirebaseAdmin.getEstadisticasEvento(evento.id);
                 totalRegistros += stats.total;
                 if (evento.activo) eventosActivos++;
             }
-            
+
             statsGrid.innerHTML = `
                 <div class="stat-card">
                     <h3>Total Eventos</h3>
@@ -262,24 +274,24 @@
         async function cargarEventos() {
             const listaDiv = document.getElementById('eventosLista');
             listaDiv.innerHTML = '<div class="spinner"></div>';
-            
+
             eventosData = await FirebaseAdmin.getAllEventos();
-            
+
             if (eventosData.length === 0) {
                 listaDiv.innerHTML = '<p>No hay eventos creados. Crea uno nuevo.</p>';
                 return;
             }
-            
+
             let html = '<div class="eventos-table-wrapper"><table class="eventos-table"><thead><tr><th>Evento</th><th>Período</th><th>Estado</th><th>Registros</th><th style="text-align: center;">Acciones</th></tr></thead><tbody>';
-            
+
             for (const evento of eventosData) {
                 const stats = await FirebaseAdmin.getEstadisticasEvento(evento.id);
                 const fechaInicio = evento.fechaInicio?.toDate ? evento.fechaInicio.toDate().toLocaleDateString('es-AR') : 'N/A';
                 const fechaFin = evento.fechaFin?.toDate ? evento.fechaFin.toDate().toLocaleDateString('es-AR') : 'N/A';
-                
+
                 const estadoClass = evento.activo ? 'evento-activo' : 'evento-inactivo';
                 const estadoIcon = evento.activo ? '🟢' : '⚫';
-                
+
                 html += `
                     <tr class="${estadoClass}">
                         <td>
@@ -295,9 +307,9 @@
                             </div>
                         </td>
                         <td>
-                            ${evento.activo ? 
-                                '<span class="badge badge-success" style="font-size: 13px;">' + estadoIcon + ' ACTIVO</span>' : 
-                                '<span class="badge badge-danger" style="font-size: 13px;">' + estadoIcon + ' INACTIVO</span>'}
+                            ${evento.activo ?
+                        '<span class="badge badge-success" style="font-size: 13px;">' + estadoIcon + ' ACTIVO</span>' :
+                        '<span class="badge badge-danger" style="font-size: 13px;">' + estadoIcon + ' INACTIVO</span>'}
                         </td>
                         <td>
                             <div style="text-align: center;">
@@ -307,9 +319,10 @@
                         </td>
                         <td style="text-align: center;">
                             <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                                <button class="btn ${evento.activo ? 'btn-warning' : 'btn-success'}" onclick="toggleEvento('${evento.id}', ${!evento.activo})" style="padding: 8px 15px; font-size: 13px; min-width: 110px;">
+                                ${(!firebase.auth().currentUser || firebase.auth().currentUser.email !== 'conflu@casinomagic.com.ar') ?
+                        `<button class="btn ${evento.activo ? 'btn-warning' : 'btn-success'}" onclick="toggleEvento('${evento.id}', ${!evento.activo})" style="padding: 8px 15px; font-size: 13px; min-width: 110px;">
                                     ${evento.activo ? '⏸️ Desactivar' : '▶️ Activar'}
-                                </button>
+                                </button>` : ''}
                                 <button class="btn btn-info" onclick="verRegistros('${evento.id}', '${evento.nombre}')" style="padding: 8px 15px; font-size: 13px;">
                                     👥 Ver Registros
                                 </button>
@@ -318,40 +331,45 @@
                     </tr>
                 `;
             }
-            
+
             html += '</tbody></table></div>';
             listaDiv.innerHTML = html;
         }
 
         // Toggle evento activo/inactivo
         async function toggleEvento(eventoId, activo) {
+            const user = firebase.auth().currentUser;
+            if (user && user.email === 'conflu@casinomagic.com.ar') {
+                alert('⛔ No tenés permisos para cambiar el estado de los eventos.');
+                return;
+            }
             try {
                 // Si se va a activar este evento
                 if (activo) {
                     // Buscar el evento activo actual
                     const eventoActivo = eventosData.find(e => e.activo && e.id !== eventoId);
-                    
+
                     if (eventoActivo) {
                         const confirmar = confirm(
                             `⚠️ ATENCIÓN\n\n` +
                             `El evento "${eventoActivo.nombre}" está activo actualmente.\n\n` +
                             `¿Querés desactivarlo y activar "${eventosData.find(e => e.id === eventoId).nombre}"?`
                         );
-                        
+
                         if (!confirmar) {
                             return; // Cancelar si el usuario no confirma
                         }
-                        
+
                         // Desactivar el evento activo actual
                         await FirebaseAdmin.toggleEventoActivo(eventoActivo.id, false);
                     }
                 }
-                
+
                 // Activar o desactivar el evento seleccionado
                 await FirebaseAdmin.toggleEventoActivo(eventoId, activo);
                 await cargarEstadisticas();
                 await cargarEventos();
-                
+
                 const mensaje = activo ? '✅ Evento activado exitosamente' : '✅ Evento desactivado';
                 alert(mensaje);
             } catch (error) {
@@ -365,7 +383,7 @@
             document.getElementById('eventoSeleccionadoNombre').textContent = nombreEvento;
             document.getElementById('registrosSection').style.display = 'block';
             document.getElementById('registrosTabla').innerHTML = '<div class="spinner"></div>';
-            
+
             registrosActuales = await FirebaseAdmin.getAllRegistrosEvento(eventoId);
             mostrarRegistros(registrosActuales);
         }
@@ -373,14 +391,14 @@
         // Mostrar registros en tabla
         function mostrarRegistros(registros) {
             const tablaDiv = document.getElementById('registrosTabla');
-            
+
             if (registros.length === 0) {
                 tablaDiv.innerHTML = '<p>No hay registros en este evento.</p>';
                 return;
             }
-            
+
             let html = '<table><thead><tr><th>DNI</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Fecha Registro</th><th>Estado</th></tr></thead><tbody>';
-            
+
             registros.forEach(r => {
                 const fecha = r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/A';
                 html += `
@@ -394,7 +412,7 @@
                     </tr>
                 `;
             });
-            
+
             html += '</tbody></table>';
             tablaDiv.innerHTML = html;
         }
@@ -431,16 +449,24 @@
             document.getElementById('modalNuevoEvento').style.display = 'none';
         }
 
+
+
         // Crear evento
         async function crearEvento(event) {
             event.preventDefault();
-            
+
+            const user = firebase.auth().currentUser;
+            if (user && user.email === 'conflu@casinomagic.com.ar') {
+                alert('⛔ No tenés permisos para crear eventos.');
+                return;
+            }
+
             const eventoId = document.getElementById('nuevoEventoId').value.trim().toLowerCase().replace(/\s+/g, '-');
             const nombre = document.getElementById('nuevoEventoNombre').value;
             const fechaInicio = new Date(document.getElementById('nuevoEventoFechaInicio').value);
             const fechaFin = new Date(document.getElementById('nuevoEventoFechaFin').value);
             const descripcion = document.getElementById('nuevoEventoDescripcion').value;
-            
+
             try {
                 // Siempre crear evento desactivado
                 await FirebaseDB.createOrUpdateEvento(eventoId, {
@@ -450,16 +476,16 @@
                     descripcion,
                     activo: false
                 });
-                
+
                 cerrarModal();
-                
+
                 // Limpiar formulario
                 document.getElementById('nuevoEventoId').value = '';
                 document.getElementById('nuevoEventoNombre').value = '';
                 document.getElementById('nuevoEventoFechaInicio').value = '';
                 document.getElementById('nuevoEventoFechaFin').value = '';
                 document.getElementById('nuevoEventoDescripcion').value = '';
-                
+
                 await cargarEstadisticas();
                 await cargarEventos();
                 alert('✅ Evento creado exitosamente\n\n📌 El evento está desactivado. Podés activarlo desde la lista de eventos.');
@@ -471,4 +497,5 @@
 
     </script>
 </body>
+
 </html>
