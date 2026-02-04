@@ -274,12 +274,38 @@ async function handleCheckDni() {
     elements.checkDniBtn.disabled = true;
     elements.checkDniBtn.textContent = 'VALIDANDO...';
 
-    // Simulamos un pequeño delay para UX
-    setTimeout(() => {
-        elements.checkDniBtn.disabled = false;
-        elements.checkDniBtn.textContent = 'CONTINUAR';
-        goToRegistrationForm(dni);
-    }, 500);
+    // Verificación real en Firebase
+    try {
+        if (usingFirebase && window.FirebaseDB) {
+            const result = await FirebaseDB.checkDniExists(dni);
+
+            if (result.exists) {
+                // Ya registrado -> Mostrar pantalla de error/aviso
+                debugLog('⚠️ DNI ya registrado (Check inicial):', result.data);
+
+                elements.checkDniBtn.disabled = false;
+                elements.checkDniBtn.textContent = 'CONTINUAR';
+
+                const existingData = result.data || {
+                    dni: dni,
+                    nombreCompleto: 'Participante',
+                    nombre: 'Participante'
+                };
+
+                goToAlreadyRegistered(existingData);
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error verificando DNI:', error);
+        // En caso de error de red, permitimos continuar y validamos al final
+        // o podríamos mostrar un error. Decisión: Fail open (mejor UX si hay mala señal)
+    }
+
+    // Si no está registrado o no pudimos verificar, avanzamos al formulario
+    elements.checkDniBtn.disabled = false;
+    elements.checkDniBtn.textContent = 'CONTINUAR';
+    goToRegistrationForm(dni);
 }
 
 // ===== REGISTRO (VERIFICACIÓN Y REGISTRO EN UNA SOLA LLAMADA) =====
@@ -680,24 +706,11 @@ function showSuccessMessage(nombreCompleto) {
             </div>
         `;
 
-        // Intentar cerrar la ventana (tanto en móvil como desktop)
-        try {
-            if (window.close) {
-                window.close();
-                debugLog('🚪 window.close() ejecutado');
-            }
-        } catch (e) {
-            debugLog('❌ window.close() falló:', e.message);
-        }
-
-        // Fallback: Si no se pudo cerrar la ventana, redirigir a Casino Magic
+        // Redirigir siempre a Casino Magic
         setTimeout(() => {
-            // Verificar si la ventana aún está abierta
-            if (!document.hidden) {
-                debugLog('🌐 No se pudo cerrar la ventana - redirigiendo a Casino Magic');
-                window.location.href = 'https://casinomagic.com.ar/';
-            }
-        }, 1500); // Un poco más de tiempo para que se vea el mensaje
+            debugLog('🌐 Redirigiendo a Casino Magic');
+            window.location.href = 'https://casinomagic.com.ar/';
+        }, 1500); // Dar tiempo para ver el mensaje de agradecimiento
     });
 
     // Auto-foco en el botón después de un momento
