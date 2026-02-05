@@ -11,7 +11,7 @@
 <body>
     <!-- PANTALLA DE LOGIN -->
     <div class="login-container" id="loginScreen">
-        <h1>🎰 Panel de Administración</h1>
+        <h1>Panel de Administración</h1>
         <h3 style="text-align: center; color: #666; margin-bottom: 20px;">Casino Magic</h3>
         <input type="email" id="emailInput" placeholder="Email" autocomplete="email" style="margin-bottom: 10px;">
         <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="current-password">
@@ -27,11 +27,12 @@
         <!-- Header -->
         <div class="admin-header">
             <div>
-                <h1>🎰 Panel de Administración</h1>
+                <h1>Panel de Administración</h1>
                 <p style="color: #666;">Casino Magic - Gestión de Eventos</p>
             </div>
             <div>
-                <button class="btn btn-primary" id="btnNuevoEvento" onclick="mostrarModalNuevoEvento()">+ Nuevo
+                <button class="btn btn-primary" id="btnNuevoEvento" onclick="mostrarModalNuevoEvento()"
+                    style="display: none;">+ Nuevo
                     Evento</button>
                 <button class="btn btn-danger" onclick="FirebaseAdmin.cerrarSesion()">Cerrar Sesión</button>
             </div>
@@ -45,12 +46,12 @@
         <!-- Lista de Eventos -->
         <div class="content-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0;">📅 Gestión de Eventos</h2>
+                <h2 style="margin: 0;">Evento Activo</h2>
             </div>
 
             <!-- Alerta informativa -->
-            <div class="alert alert-info" style="margin-bottom: 20px;">
-                <strong>ℹ️ Importante:</strong> Solo un evento puede estar activo a la vez. Al activar un evento,
+            <div class="alert alert-info" style="margin-bottom: 20px; display: none;">
+                <strong>Importante:</strong> Solo un evento puede estar activo a la vez. Al activar un evento,
                 cualquier otro evento activo se desactivará automáticamente.
             </div>
 
@@ -62,9 +63,9 @@
         <!-- Registros del Evento Seleccionado -->
         <div class="content-section" id="registrosSection" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>👥 Registros: <span id="eventoSeleccionadoNombre"></span></h2>
+                <h2>Registros: <span id="eventoSeleccionadoNombre"></span></h2>
                 <div>
-                    <button class="btn btn-success" onclick="exportarRegistrosActuales()">📥 Exportar CSV</button>
+                    <button class="btn btn-success" onclick="exportarRegistrosActuales()">Exportar CSV</button>
                     <button class="btn btn-secondary" onclick="cerrarRegistros()">Cerrar</button>
                 </div>
             </div>
@@ -113,7 +114,7 @@
                 </div>
 
                 <div class="alert alert-info" style="font-size: 13px;">
-                    ℹ️ El evento se creará <strong>desactivado</strong>. Podés activarlo luego desde la lista de
+                    El evento se creará <strong>desactivado</strong>. Podés activarlo luego desde la lista de
                     eventos.
                 </div>
 
@@ -177,7 +178,7 @@
             const errorDiv = document.getElementById('loginError');
 
             if (!email || !password) {
-                errorDiv.textContent = '❌ Ingrese email y contraseña';
+                errorDiv.textContent = 'Ingrese email y contraseña';
                 setTimeout(() => errorDiv.textContent = '', 3000);
                 return;
             }
@@ -188,15 +189,15 @@
                 await loginWithFirebase(email, password);
                 // El onAuthStateChanged detectará el login y llamará a iniciarPanel()
             } catch (error) {
-                let mensaje = '❌ Error de autenticación';
+                let mensaje = 'Error de autenticación';
                 if (error.code === 'auth/user-not-found') {
-                    mensaje = '❌ Usuario no encontrado';
+                    mensaje = 'Usuario no encontrado';
                 } else if (error.code === 'auth/wrong-password') {
-                    mensaje = '❌ Contraseña incorrecta';
+                    mensaje = 'Contraseña incorrecta';
                 } else if (error.code === 'auth/invalid-email') {
-                    mensaje = '❌ Email inválido';
+                    mensaje = 'Email inválido';
                 } else if (error.code === 'auth/too-many-requests') {
-                    mensaje = '❌ Demasiados intentos. Espere un momento';
+                    mensaje = 'Demasiados intentos. Espere un momento';
                 }
                 errorDiv.textContent = mensaje;
                 setTimeout(() => errorDiv.textContent = '', 5000);
@@ -255,15 +256,7 @@
             }
 
             statsGrid.innerHTML = `
-                <div class="stat-card">
-                    <h3>Total Eventos</h3>
-                    <div class="number">${eventos.length}</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Eventos Activos</h3>
-                    <div class="number">${eventosActivos}</div>
-                </div>
-                <div class="stat-card">
+                <div class="stat-card" onclick="verTodosRegistros()" style="cursor: pointer;" title="Ver todos los registros">
                     <h3>Total Registros</h3>
                     <div class="number">${totalRegistros}</div>
                 </div>
@@ -277,20 +270,23 @@
 
             eventosData = await FirebaseAdmin.getAllEventos();
 
-            if (eventosData.length === 0) {
-                listaDiv.innerHTML = '<p>No hay eventos creados. Crea uno nuevo.</p>';
+            // Filtrar solo activos
+            const eventosVisibles = eventosData.filter(e => e.activo);
+
+            if (eventosVisibles.length === 0) {
+                listaDiv.innerHTML = '<p>No hay eventos activos.</p>';
                 return;
             }
 
             let html = '<div class="eventos-table-wrapper"><table class="eventos-table"><thead><tr><th>Evento</th><th>Período</th><th>Estado</th><th>Registros</th><th style="text-align: center;">Acciones</th></tr></thead><tbody>';
 
-            for (const evento of eventosData) {
+            for (const evento of eventosVisibles) {
                 const stats = await FirebaseAdmin.getEstadisticasEvento(evento.id);
                 const fechaInicio = evento.fechaInicio?.toDate ? evento.fechaInicio.toDate().toLocaleDateString('es-AR') : 'N/A';
                 const fechaFin = evento.fechaFin?.toDate ? evento.fechaFin.toDate().toLocaleDateString('es-AR') : 'N/A';
 
                 const estadoClass = evento.activo ? 'evento-activo' : 'evento-inactivo';
-                const estadoIcon = evento.activo ? '🟢' : '⚫';
+                // Removemos iconos también aquí si quedaban
 
                 html += `
                     <tr class="${estadoClass}">
@@ -302,14 +298,14 @@
                         </td>
                         <td>
                             <div style="display: flex; flex-direction: column; gap: 3px;">
-                                <span>📅 ${fechaInicio}</span>
-                                <span>📅 ${fechaFin}</span>
+                                <span>${fechaInicio}</span>
+                                <span>${fechaFin}</span>
                             </div>
                         </td>
                         <td>
                             ${evento.activo ?
-                        '<span class="badge badge-success" style="font-size: 13px;">' + estadoIcon + ' ACTIVO</span>' :
-                        '<span class="badge badge-danger" style="font-size: 13px;">' + estadoIcon + ' INACTIVO</span>'}
+                        '<span class="badge badge-success" style="font-size: 13px;">ACTIVO</span>' :
+                        '<span class="badge badge-danger" style="font-size: 13px;">INACTIVO</span>'}
                         </td>
                         <td>
                             <div style="text-align: center;">
@@ -319,12 +315,8 @@
                         </td>
                         <td style="text-align: center;">
                             <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                                ${(!firebase.auth().currentUser || firebase.auth().currentUser.email !== 'conflu@casinomagic.com.ar') ?
-                        `<button class="btn ${evento.activo ? 'btn-warning' : 'btn-success'}" onclick="toggleEvento('${evento.id}', ${!evento.activo})" style="padding: 8px 15px; font-size: 13px; min-width: 110px;">
-                                    ${evento.activo ? '⏸️ Desactivar' : '▶️ Activar'}
-                                </button>` : ''}
                                 <button class="btn btn-info" onclick="verRegistros('${evento.id}', '${evento.nombre}')" style="padding: 8px 15px; font-size: 13px;">
-                                    👥 Ver Registros
+                                    Ver Registros
                                 </button>
                             </div>
                         </td>
@@ -340,7 +332,7 @@
         async function toggleEvento(eventoId, activo) {
             const user = firebase.auth().currentUser;
             if (user && user.email === 'conflu@casinomagic.com.ar') {
-                alert('⛔ No tenés permisos para cambiar el estado de los eventos.');
+                alert('No tenés permisos para cambiar el estado de los eventos.');
                 return;
             }
             try {
@@ -351,7 +343,7 @@
 
                     if (eventoActivo) {
                         const confirmar = confirm(
-                            `⚠️ ATENCIÓN\n\n` +
+                            `ATENCIÓN\n\n` +
                             `El evento "${eventoActivo.nombre}" está activo actualmente.\n\n` +
                             `¿Querés desactivarlo y activar "${eventosData.find(e => e.id === eventoId).nombre}"?`
                         );
@@ -370,10 +362,41 @@
                 await cargarEstadisticas();
                 await cargarEventos();
 
-                const mensaje = activo ? '✅ Evento activado exitosamente' : '✅ Evento desactivado';
+                const mensaje = activo ? 'Evento activado exitosamente' : 'Evento desactivado';
                 alert(mensaje);
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Ver todos los registros
+        async function verTodosRegistros() {
+            eventoSeleccionadoId = 'todos';
+            document.getElementById('eventoSeleccionadoNombre').textContent = 'Todos los Registros Históricos';
+            document.getElementById('registrosSection').style.display = 'block';
+            document.getElementById('registrosTabla').innerHTML = '<div class="spinner"></div>';
+
+            // Scroll a la sección
+            document.getElementById('registrosSection').scrollIntoView({ behavior: 'smooth' });
+
+            let todosLosRegistros = [];
+
+            try {
+                if (!eventosData || eventosData.length === 0) {
+                    eventosData = await FirebaseAdmin.getAllEventos();
+                }
+
+                // Recopilar registros de todos los eventos
+                for (const evento of eventosData) {
+                    const regs = await FirebaseAdmin.getAllRegistrosEvento(evento.id);
+                    todosLosRegistros = todosLosRegistros.concat(regs);
+                }
+
+                registrosActuales = todosLosRegistros;
+                mostrarRegistros(registrosActuales);
+            } catch (error) {
+                console.error('Error cargando todos los registros:', error);
+                document.getElementById('registrosTabla').innerHTML = '<p style="color: red;">Error cargando registros: ' + error.message + '</p>';
             }
         }
 
@@ -397,7 +420,7 @@
                 return;
             }
 
-            let html = '<table><thead><tr><th>DNI</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Fecha Registro</th><th>Estado</th></tr></thead><tbody>';
+            let html = '<div style="overflow-x: auto;"><table><thead><tr><th>DNI</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Fecha Registro</th><th>Estado</th></tr></thead><tbody>';
 
             registros.forEach(r => {
                 const fecha = r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/A';
@@ -413,7 +436,7 @@
                 `;
             });
 
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
             tablaDiv.innerHTML = html;
         }
 
@@ -457,7 +480,7 @@
 
             const user = firebase.auth().currentUser;
             if (user && user.email === 'conflu@casinomagic.com.ar') {
-                alert('⛔ No tenés permisos para crear eventos.');
+                alert('No tenés permisos para crear eventos.');
                 return;
             }
 
@@ -488,9 +511,9 @@
 
                 await cargarEstadisticas();
                 await cargarEventos();
-                alert('✅ Evento creado exitosamente\n\n📌 El evento está desactivado. Podés activarlo desde la lista de eventos.');
+                alert('Evento creado exitosamente\n\nEl evento está desactivado. Podés activarlo desde la lista de eventos.');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                alert('Error: ' + error.message);
             }
         }
 

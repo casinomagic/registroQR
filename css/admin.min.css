@@ -415,3 +415,38 @@ tr:hover {
         padding: 8px;
     }
 }
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+    .login-container {
+        margin: 20px 15px;
+        padding: 25px;
+    }
+    
+    .admin-header {
+        padding: 15px;
+    }
+    
+    h1 {
+        font-size: 24px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-card .number {
+        font-size: 32px;
+    }
+    
+    /* Make buttons stack on very small screens */
+    .eventos-table td div {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .eventos-table .btn {
+        margin: 2px 0;
+        width: 100%;
+    }
+}
