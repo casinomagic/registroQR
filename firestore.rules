@@ -40,10 +40,8 @@ service cloud.firestore {
         // 2. El evento está activo
         // 3. El DNI es válido (7-8 dígitos)
         // 4. Tiene todos los campos requeridos
-        allow create: if request.resource.data.dni == dni 
-                      && isValidDNI(dni)
-                      && isEventoActivo(eventoId)
-                      && request.resource.data.keys().hasAll(['nombreCompleto', 'email', 'dni', 'timestamp', 'eventoId']);
+        // DESACTIVADO TEMPORALMENTE
+        allow create: if false;
         
         // Permitir lectura pública de un DNI específico (para verificar duplicados)
         // Solo si el evento está activo

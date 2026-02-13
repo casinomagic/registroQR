@@ -305,7 +305,9 @@ async function handleCheckDni() {
     // Si no está registrado o no pudimos verificar, avanzamos al formulario
     elements.checkDniBtn.disabled = false;
     elements.checkDniBtn.textContent = 'CONTINUAR';
-    goToRegistrationForm(dni);
+    // DESACTIVADO: No aceptar más registros
+    showRegistrationClosed();
+    // goToRegistrationForm(dni);
 }
 
 // ===== REGISTRO (VERIFICACIÓN Y REGISTRO EN UNA SOLA LLAMADA) =====
@@ -825,6 +827,70 @@ function showErrorModal(message) {
         modal.style.opacity = '0';
         setTimeout(() => modal.remove(), 300);
     });
+}
+
+// ===== MODAL DE REGISTRO CERRADO (NUEVO) =====
+function showRegistrationClosed() {
+    // Si ya existe uno, no agregar otro
+    if (document.getElementById('closedModal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'closedModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(22, 19, 55, 0.95)'; // Color oscuro del tema
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '10000';
+    modal.style.backdropFilter = 'blur(5px)';
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 90%; width: 450px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); font-family: inherit; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(90deg, #ff4c4c, #d32f2f);"></div>
+            
+            <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+            
+            <h2 style="color: #161337; margin-bottom: 15px; font-weight: 800; font-size: 24px;">REGISTRO CERRADO</h2>
+            
+            <p style="color: #666; margin-bottom: 30px; line-height: 1.6; font-size: 16px;">
+                Ya no se aceptan nuevas inscripciones para este evento.<br>
+                Si ya te registraste, tu ingreso está confirmado.
+            </p>
+            
+            <button id="btnCloseClosedModal" 
+                    style="background: #161337; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: 700; cursor: pointer; transition: transform 0.2s; font-size: 14px; letter-spacing: 1px; width: 100%;">
+                ENTENDIDO
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Animación de entrada
+    const content = modal.querySelector('div');
+    content.style.transform = 'scale(0.9)';
+    content.style.opacity = '0';
+    content.style.transition = 'all 0.3s ease-out';
+    
+    setTimeout(() => {
+        content.style.transform = 'scale(1)';
+        content.style.opacity = '1';
+    }, 10);
+    
+    document.getElementById('btnCloseClosedModal').onclick = () => {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 300);
+        
+        // Limpiar input para evitar reintentos inmediatos
+        if (elements.dniInput) {
+            elements.dniInput.value = '';
+            elements.dniInput.focus();
+        }
+    };
 }
 
 
